@@ -49,7 +49,7 @@ async def get_all_users(user: User = Depends(get_admin)):
 
 
 @admin_router.put('/admin/users/{user_id}')
-async def create_user(user_id, updated_user:UserScheme,
+async def update_user(user_id, updated_user: UserScheme,
                       user: User = Depends(get_admin)):
     ret_user = session.query(User).get(user_id)
     if not ret_user:
@@ -72,7 +72,7 @@ async def create_user(user_id, updated_user:UserScheme,
 
 
 @admin_router.delete('/admin/users/{user_id}')
-async def create_user(user_id):
+async def delete_user(user_id, user: User = Depends(get_admin)):
     ret_user = session.query(User).get(user_id)
     if not ret_user:
         return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND

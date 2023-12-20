@@ -25,7 +25,7 @@ async def send_message(message: MessageScheme, user: User = Depends(get_current_
 
 
 @general_router.get('/messages/{username}/')
-async def get_user(username: str, user: User = Depends(get_current_user)):
+async def get_messages(username: str, user: User = Depends(get_current_user)):
     other_user = session.query(User).filter(User.name == username).first()
     if not other_user:
         return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
@@ -37,7 +37,7 @@ async def get_user(username: str, user: User = Depends(get_current_user)):
 
 
 @general_router.put('/messages/{message_id}/')
-async def create_user(message_id: int, content: str, user: User = Depends(get_current_user)):
+async def update_message(message_id: int, content: str, user: User = Depends(get_current_user)):
     message_to_change = session.query(Message).get(message_id)
     if not message_to_change:
         return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
@@ -49,7 +49,7 @@ async def create_user(message_id: int, content: str, user: User = Depends(get_cu
 
 
 @general_router.delete('/messages/{message_id}/')
-async def create_user(message_id: int, user: User = Depends(get_current_user)):
+async def delete_message(message_id: int, user: User = Depends(get_current_user)):
     message_to_change = session.query(Message).get(message_id)
     if not message_to_change:
         return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
