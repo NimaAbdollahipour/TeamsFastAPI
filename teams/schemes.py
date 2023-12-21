@@ -22,3 +22,6 @@ class MessageScheme(BaseModel):
     content: str
 
 
+class LoginRequest(BaseModel):
+    username: str
+    password: str

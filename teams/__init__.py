@@ -19,7 +19,9 @@ from fastapi import FastAPI, APIRouter
 
 app = FastAPI()
 
-origins = []
+origins = [
+    '*'
+]
 
 app.add_middleware(
     CORSMiddleware,
