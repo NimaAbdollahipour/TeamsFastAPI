@@ -98,7 +98,7 @@ async def login_for_access_token(form_data: Annotated[OAuth2PasswordRequestForm,
     return {"access_token": access_token, "token_type": "bearer"}
 
 
-@auth_router.post("/login", response_model=Token)
+@auth_router.post("/login")
 async def login_for_access_token(user: LoginRequest):
     user = authenticate_user(user.username, user.password)
     if not user:
@@ -111,4 +111,4 @@ async def login_for_access_token(user: LoginRequest):
     access_token = create_access_token(
         data={"sub": user.name}, expires_delta=access_token_expires
     )
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {"access_token": access_token, "token_type": "bearer", "role": user.role}
