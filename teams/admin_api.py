@@ -48,19 +48,10 @@ async def update_user(user_id:int, updated_user: UserScheme,
     ret_user = session.query(User).get(user_id)
     if not ret_user:
         return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
-    if updated_user.name:
-        ret_user.name = updated_user.name
-    if updated_user.email:
-        ret_user.email = updated_user.email
-    if updated_user.role:
-        if updated_user.role == 'admin':
-            ret_user.role = UserRole.ADMIN
-        elif updated_user.role == 'teacher':
-            ret_user.role = UserRole.TEACHER
-        else:
-            ret_user.role = UserRole.STUDENT
-    if updated_user.password:
-        ret_user.password = pwd_context.hash(updated_user.password)
+    ret_user.set_name(updated_user.name)
+    ret_user.set_email(updated_user.email)
+    ret_user.set_role(updated_user.role)
+    ret_user.set_password(updated_user.password)
     session.commit()
     return {"message": "Updated User Successfully"}, status.HTTP_200_OK
 
