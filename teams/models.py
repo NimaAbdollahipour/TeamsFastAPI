@@ -50,6 +50,12 @@ class User(Base):
             "password":dec(self.password),
             "role":self.role.value
         }
+    def get_protected(self):
+        return {
+            "name":dec(self.name),
+            "email":dec(self.email),
+            "role":self.role.value
+        }
 
 
 class Message(Base):
@@ -84,7 +90,7 @@ class Team(Base):
     creator = relationship("User", backref="teams")
 
     def set_name(self, name):
-        self.content = enc(name)
+        self.name = enc(name)
 
     def get(self):
         return {
@@ -118,7 +124,7 @@ class Channel(Base):
     team = relationship("Team", backref="channels")
 
     def set_name(self, name):
-        self.content = enc(name)
+        self.name = enc(name)
 
     def get(self):
         return {
@@ -159,7 +165,7 @@ class Group(Base):
     creator = relationship("User", backref="groups")
 
     def set_name(self, name):
-        self.content = enc(name)
+        self.name = enc(name)
 
     def get(self):
         return {

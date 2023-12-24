@@ -58,3 +58,20 @@ async def delete_message(message_id: int, user: User = Depends(get_current_user)
     session.delete(message_to_change)
     session.commit()
     return {"msg": "deleted message successfully"}, status.HTTP_200_OK
+
+
+@general_router.get('/users/{user_id}')
+async def get_user(user_id:int, user: User = Depends(get_current_user)):
+    ret_user = session.query(User).get(user_id)
+    if not ret_user:
+        return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
+    return {"msg": "Retrieved users sucessfully", "user": ret_user.get_protected()}, status.HTTP_200_OK
+
+
+@general_router.get('/users')
+async def get_all_users(user: User = Depends(get_current_user)):
+    ret_users = session.query(User).filter(User.name!=user.name).all()
+    if not ret_users:
+        return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
+    all_users = [u.get_protected() for u in ret_users]
+    return {"msg": "Retrieved users sucessfully", "users": all_users}, status.HTTP_200_OK
