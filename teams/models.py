@@ -1,4 +1,4 @@
-from sqlalchemy.orm import relationship, declarative_base
+from sqlalchemy.orm import relationship, declarative_base, validates
 from enum import Enum as PyEnum
 from .des_enc import enc,dec
 from sqlalchemy import (
@@ -28,6 +28,7 @@ class User(Base):
     email = Column(String(256), unique=True, nullable=False)
     password = Column(String(64), nullable=False)
     role = Column(Enum(UserRole), nullable=False)
+    chats = relationship('Chat', secondary='chat_user', back_populates='users')
 
     def set_name(self,name):
         self.name = enc(name)
@@ -60,12 +61,14 @@ class User(Base):
 
 class Message(Base):
     __tablename__ = "messages"
-    id = Column(Integer, Sequence('annc_seq', start=1), primary_key=True)
+    id = Column(Integer, Sequence('msg_seq', start=1), primary_key=True)
     content = Column(Text, nullable=False)
     sender_id = Column(Integer, ForeignKey('users.id'))
     sender = relationship("User", backref="sent_messages", foreign_keys=[sender_id])
     receiver_id = Column(Integer, ForeignKey('users.id'))
     receiver = relationship("User", backref="received_messages", foreign_keys=[receiver_id])
+    chat_id = Column(Integer, ForeignKey('chats.id'))
+    chat = relationship("Chat", back_populates="messages", foreign_keys=[chat_id])
     date_created = Column(DateTime)
 
     def set_content(self, content):
@@ -81,10 +84,22 @@ class Message(Base):
         }
 
 
+class Chat(Base):
+    __tablename__ = "chats"
+    id = Column(Integer, Sequence('chat_seq', start=1), primary_key=True)
+    users = relationship('User', secondary='chat_user', back_populates='chats')
+    messages = relationship('Message', back_populates='chat')
+
+
+class ChatUser(Base):
+    __tablename__ = "chat_user"
+    user_id = Column(Integer, ForeignKey('users.id'), primary_key=True)
+    chat_id = Column(Integer, ForeignKey('chats.id'), primary_key=True)
+
 
 class Team(Base):
     __tablename__ = "teams"
-    id = Column(Integer, Sequence('team_seq', start=1), primary_key=True)
+    id = Column(Integer, Sequence('team_seq', start=1), primary_key=True, autoincrement=True)
     name = Column(String(64), nullable=False)
     creator_id = Column(Integer, ForeignKey('users.id'))
     creator = relationship("User", backref="teams")
@@ -155,3 +170,4 @@ class Announcement(Base):
             "content":dec(self.content),
             "date_created":self.date_created
         }
+

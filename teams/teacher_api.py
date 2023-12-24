@@ -54,11 +54,11 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
     encrypted_usernames = [enc(username) for username in usernames]
     for username in encrypted_usernames:
         ret_user = session.query(User).filter(User.name==username).first()
-        if ret_user.role != UserRole.ADMIN:
+        if ret_user.role == UserRole.STUDENT:
             new_sub = Subscription(team_id=team_id, user_id=ret_user.id)
             session.add(new_sub)
     session.commit()
-    return {"msg": "team members added successfully"}, status.HTTP_200_OK
+    return {"msg": "team members added successfully (ignored non-student users)"}, status.HTTP_200_OK
 
 
 @teacher_router.delete('/teacher/teams/{team_id}/member')
@@ -83,11 +83,11 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
     encrypted_usernames = [enc(username) for username in usernames]
     for username in encrypted_usernames:
         ret_user = session.query(User).filter(User.name==username).first()
-        if ret_user.role != UserRole.ADMIN:
+        if ret_user.role == UserRole.TEACHER:
             new_sub = TeamOwner(team_id=team_id, user_id=ret_user.id)
             session.add(new_sub)
     session.commit()
-    return {"msg": "team owners added successfully"}, status.HTTP_200_OK
+    return {"msg": "team owners added successfully (ignored non-teacher users)"}, status.HTTP_200_OK
 
 
 @teacher_router.delete('/teacher/teams/{team_id}/owner')
@@ -103,3 +103,8 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
             session.delete(sub)
     session.commit()
     return {"msg": "team owners removed successfully"}, status.HTTP_200_OK
+
+
+# create, update, delete channel
+# create, update, delete anncouncement
+# 
