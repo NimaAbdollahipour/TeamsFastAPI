@@ -1,4 +1,4 @@
-from .models import User, UserRole, Team, Channel, Subscription
+from .models import User, UserRole, Team, Channel, Subscription, TeamOwner
 from fastapi import APIRouter, status, Depends
 from . import session
 from .auth2 import get_teacher
@@ -72,3 +72,32 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
         session.delete(sub)
     session.commit()
     return {"msg": "team members removed successfully"}, status.HTTP_200_OK
+
+@teacher_router.post('/teacher/teams/{team_id}/owner')
+async def add_team_members(team_id: int, usernames: List[str], user:User = Depends(get_teacher)):
+    team = session.query(Team).get(team_id)
+    if team.creator_id!=user.id:
+        return {"msg": "user is not the creator of team"}, status.HTTP_401_UNAUTHORIZED
+    encrypted_usernames = [enc(username) for username in usernames]
+    for username in encrypted_usernames:
+        ret_user = session.query(User).filter(User.name==username).first()
+        if ret_user.role != UserRole.ADMIN:
+            new_sub = TeamOwner(team_id=team_id, user_id=ret_user.id)
+            session.add(new_sub)
+    session.commit()
+    return {"msg": "team owners added successfully"}, status.HTTP_200_OK
+
+
+@teacher_router.delete('/teacher/teams/{team_id}/owner')
+async def add_team_members(team_id: int, usernames: List[str], user:User = Depends(get_teacher)):
+    team = session.query(Team).get(team_id)
+    if team.creator_id!=user.id:
+        return {"msg": "user is not the creator of team"}, status.HTTP_401_UNAUTHORIZED
+    encrypted_usernames = [enc(username) for username in usernames]
+    for username in encrypted_usernames:
+        ret_user = session.query(User).filter(User.name==username).first()
+        sub = session.query(TeamOwner).filter(TeamOwner.team_id==team_id, TeamOwner.user_id==ret_user.id).first()
+        if sub:
+            session.delete(sub)
+    session.commit()
+    return {"msg": "team owners removed successfully"}, status.HTTP_200_OK
