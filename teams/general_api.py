@@ -1,4 +1,4 @@
-from .models import User, Message, Chat
+from .models import User, Message, Chat, Channel, Team, Announcement
 from fastapi import APIRouter, Depends, status
 from . import session
 from datetime import datetime
@@ -99,3 +99,55 @@ async def get_all_users(user: User = Depends(get_current_user)):
     return {"msg": "Retrieved users sucessfully", "users": all_users}, status.HTTP_200_OK
 
 
+@general_router.post('/channels/{channel_id}')
+async def send_team_message(channel_id:int, message:str, user:User= Depends(get_current_user)):
+    channel = session.query(Channel).get(channel_id)
+    if not channel:
+        return {"msg": "channel not found"}, status.HTTP_404_NOT_FOUND
+    team = session.query(Team).get(channel.team.get().get("id"))
+    if user.id == team.creator_id or user in team.owners or user in team.members:
+        new_msg = Announcement()
+        new_msg.set_content(message)
+        new_msg.channel_id = channel.id
+        new_msg.user_id = user.id
+        new_msg.date_created = datetime.now()
+        channel.announcements.append(new_msg)
+        session.commit()
+        return {"msg": "message sent to channel"}, status.HTTP_201_CREATED
+    return {"msg": "you are not allowed to send message to this channel"}, status.HTTP_401_UNAUTHORIZED
+    
+
+
+@general_router.get('/channels/{channel_id}/messages/')
+async def get_team_messages(channel_id:int, user:User= Depends(get_current_user)):
+    channel = session.query(Channel).get(channel_id)
+    if not channel:
+        return {"msg": "channel not found"}, status.HTTP_404_NOT_FOUND
+    team = session.query(Team).get(channel.team.get().get("id"))
+    if user.id == team.creator_id or user in team.owners or user in team.members:
+        messages = [message.get() for message in channel.announcements]
+        return {"msg": "message sent to channel","messages":messages}, status.HTTP_200_OK
+    return {"msg": "you are not allowed to send message to this channel"}, status.HTTP_401_UNAUTHORIZED
+
+
+@general_router.put('/channels/messages/{message_id}')
+async def update_team_message(message_id:int, message:str, user:User= Depends(get_current_user)):
+    annc = session.query(Announcement).get(message_id)
+    if not annc:
+        return {"msg": "message not found"}, status.HTTP_404_NOT_FOUND
+    if annc.user_id == user.id:
+        annc.set_content(message)
+        return {"msg": "message updated successfully","messages":annc.get()}, status.HTTP_200_OK
+    return {"msg": "you are not allowed to change message"}, status.HTTP_401_UNAUTHORIZED
+
+
+@general_router.delete('/channels/messages/{message_id}')
+async def delete_team_message(message_id:int, user:User= Depends(get_current_user)):
+    annc = session.query(Announcement).get(message_id)
+    if not annc:
+        return {"msg": "message not found"}, status.HTTP_404_NOT_FOUND
+    if annc.user_id == user.id:
+        session.delete(annc)
+        session.commit()
+        return {"msg": "message updated successfully","messages":annc.get()}, status.HTTP_200_OK
+    return {"msg": "you are not allowed to change message"}, status.HTTP_401_UNAUTHORIZED

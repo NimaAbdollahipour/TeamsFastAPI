@@ -110,7 +110,6 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
     return {"msg": "team owners removed successfully"}, status.HTTP_200_OK
 
 
-
 @teacher_router.post('/teacher/teams/{team_id}/channels')
 async def create_channel(team_id: int, name: str, user:User = Depends(get_teacher)):
     team = session.query(Team).get(team_id)
@@ -141,4 +140,3 @@ async def update_channel_name(channel_id: int, name:str, user:User = Depends(get
         channel.set_name(name)
         session.commit()
     return {"msg": "channel name updated"}, status.HTTP_200_OK
-

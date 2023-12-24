@@ -31,6 +31,7 @@ class User(Base):
     chats = relationship('Chat', secondary='chat_user', back_populates='users')
     owned_teams = relationship('Team', secondary='subscriptions', back_populates='owners')
     joined_teams = relationship('Team', secondary='team_owner', back_populates='members')
+    announcements = relationship('Announcement', back_populates='user')
 
     def set_name(self,name):
         self.name = enc(name)
@@ -142,6 +143,7 @@ class Channel(Base):
     name = Column(String(64), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'))
     team = relationship("Team", back_populates="channels")
+    announcements = relationship('Announcement', back_populates='channel')
 
     def set_name(self, name):
         self.name = enc(name)
@@ -159,9 +161,9 @@ class Announcement(Base):
     id = Column(Integer, Sequence('announcement_seq', start=1), primary_key=True)
     content = Column(Text, nullable=False)
     channel_id = Column(Integer, ForeignKey('channels.id'))
-    channel = relationship("Channel", backref="announcements", foreign_keys=[channel_id])
+    channel = relationship("Channel", back_populates="announcements", foreign_keys=[channel_id])
     user_id = Column(Integer, ForeignKey('users.id'))
-    user = relationship("User", backref="announcements", foreign_keys=[user_id])
+    user = relationship("User", back_populates="announcements", foreign_keys=[user_id])
     date_created = Column(DateTime)
 
     def set_content(self, content):
