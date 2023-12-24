@@ -54,8 +54,9 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
     encrypted_usernames = [enc(username) for username in usernames]
     for username in encrypted_usernames:
         ret_user = session.query(User).filter(User.name==username).first()
-        new_sub = Subscription(team_id=team_id, user_id=ret_user.id)
-        session.add(new_sub)
+        if ret_user.role != UserRole.ADMIN:
+            new_sub = Subscription(team_id=team_id, user_id=ret_user.id)
+            session.add(new_sub)
     session.commit()
     return {"msg": "team members added successfully"}, status.HTTP_200_OK
 
@@ -69,7 +70,8 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
     for username in encrypted_usernames:
         ret_user = session.query(User).filter(User.name==username).first()
         sub = session.query(Subscription).filter(Subscription.team_id==team_id, Subscription.user_id==ret_user.id).first()
-        session.delete(sub)
+        if sub:
+            session.delete(sub)
     session.commit()
     return {"msg": "team members removed successfully"}, status.HTTP_200_OK
 
