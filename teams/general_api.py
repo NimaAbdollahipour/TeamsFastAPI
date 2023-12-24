@@ -97,3 +97,5 @@ async def get_all_users(user: User = Depends(get_current_user)):
         return {"msg": "user not found"}, status.HTTP_404_NOT_FOUND
     all_users = [u.get_protected() for u in ret_users]
     return {"msg": "Retrieved users sucessfully", "users": all_users}, status.HTTP_200_OK
+
+

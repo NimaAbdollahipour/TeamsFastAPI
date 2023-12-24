@@ -29,6 +29,8 @@ class User(Base):
     password = Column(String(64), nullable=False)
     role = Column(Enum(UserRole), nullable=False)
     chats = relationship('Chat', secondary='chat_user', back_populates='users')
+    owned_teams = relationship('Team', secondary='subscriptions', back_populates='owners')
+    joined_teams = relationship('Team', secondary='team_owner', back_populates='members')
 
     def set_name(self,name):
         self.name = enc(name)
@@ -103,6 +105,9 @@ class Team(Base):
     name = Column(String(64), nullable=False)
     creator_id = Column(Integer, ForeignKey('users.id'))
     creator = relationship("User", backref="teams")
+    channels = relationship("Channel", back_populates="team")
+    members = relationship("User", secondary='subscriptions' ,back_populates="joined_teams")
+    owners = relationship("User", secondary='team_owner', back_populates="owned_teams")
 
     def set_name(self, name):
         self.name = enc(name)
@@ -136,7 +141,7 @@ class Channel(Base):
     id = Column(Integer, Sequence('channel_seq', start=1), primary_key=True)
     name = Column(String(64), nullable=False)
     team_id = Column(Integer, ForeignKey('teams.id'))
-    team = relationship("Team", backref="channels")
+    team = relationship("Team", back_populates="channels")
 
     def set_name(self, name):
         self.name = enc(name)
