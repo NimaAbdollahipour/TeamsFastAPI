@@ -1,9 +1,11 @@
-from .models import User, UserRole
+from .models import User, UserRole, Team, Message, Announcement, Channel
 from fastapi import APIRouter, status, Depends
 from . import session
 from .auth2 import pwd_context, get_admin
 from teams.schemes import UserScheme
-from .des_enc import des_obj
+from .des_enc import des_obj, enc, dec, enc_key
+import os
+from dotenv import load_dotenv, find_dotenv
 
 admin_router = APIRouter()
 
@@ -66,3 +68,40 @@ async def delete_user(user_id:int, user: User = Depends(get_admin)):
     session.delete(ret_user)
     session.commit()
     return {"msg": "Deleted User Successfully", "user": ret_user}, status.HTTP_200_OK
+
+
+@admin_router.post('/admin/des/')
+async def change_key(key: str, user: User = Depends(get_admin)):
+    if len(key)<8:
+        return {"msg":"key should be at least 8"}, status.HTTP_400_BAD_REQUEST
+    else:
+        key = key[:8]
+    users = session.query(User).all()
+    messages = session.query(Message).all()
+    teams = session.query(Team).all()
+    channels = session.query(Channel).all()
+    anncs = session.query(Announcement).all()
+
+    if users:
+        for u in users:
+            u.name = enc_key(dec(u.name),key)
+            u.email = enc_key(dec(u.email),key)
+            u.password = enc_key(dec(u.password),key)
+    if messages:
+        for m in messages:
+            m.content = enc_key(dec(m.content),key)
+    if teams:
+        for t in teams:
+            t.name = enc_key(dec(t.name),key)
+    if channels:
+        for c in channels:
+            c.name = enc_key(dec(c.name),key)
+    for a in anncs:
+        a.content = enc_key(dec(a.content),key)
+
+    session.commit()
+
+    os.environ['DES_KEY'] = key
+    with open(find_dotenv(), 'w') as env_file:
+        env_file.write(f'DES_KEY={key}\n')
+    return {"msg":"changed key successfully"}, status.HTTP_200_OK
