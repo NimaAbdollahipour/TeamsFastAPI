@@ -1,4 +1,4 @@
-from .models import User, UserRole, Team, Channel, Subscription
+from .models import User, UserRole, Team, Channel, Subscription, TeamOwner
 from fastapi import APIRouter, status, Depends
 from . import session
 from .auth2 import get_teacher
@@ -49,15 +49,17 @@ async def get_teams(team_id: int, name: str, user:User = Depends(get_teacher)):
 @teacher_router.post('/teacher/teams/{team_id}/member')
 async def add_team_members(team_id: int, usernames: List[str], user:User = Depends(get_teacher)):
     team = session.query(Team).get(team_id)
-    if team.creator_id!=user.id:
+    if team.creator_id!=user.id  and (user not in team.owners):
         return {"msg": "user is not the creator of team"}, status.HTTP_401_UNAUTHORIZED
     encrypted_usernames = [enc(username) for username in usernames]
     for username in encrypted_usernames:
         ret_user = session.query(User).filter(User.name==username).first()
-        new_sub = Subscription(team_id=team_id, user_id=ret_user.id)
-        session.add(new_sub)
+        if ret_user:
+            if ret_user.role == UserRole.STUDENT:
+                new_sub = Subscription(team_id=team_id, user_id=ret_user.id)
+                session.add(new_sub)
     session.commit()
-    return {"msg": "team members added successfully"}, status.HTTP_200_OK
+    return {"msg": "team members added successfully (ignored non-student users)"}, status.HTTP_200_OK
 
 
 @teacher_router.delete('/teacher/teams/{team_id}/member')
@@ -68,7 +70,73 @@ async def add_team_members(team_id: int, usernames: List[str], user:User = Depen
     encrypted_usernames = [enc(username) for username in usernames]
     for username in encrypted_usernames:
         ret_user = session.query(User).filter(User.name==username).first()
-        sub = session.query(Subscription).filter(Subscription.team_id==team_id, Subscription.user_id==ret_user.id).first()
-        session.delete(sub)
+        if ret_user:
+            sub = session.query(Subscription).filter(Subscription.team_id==team_id, Subscription.user_id==ret_user.id).first()
+            if sub:
+                session.delete(sub)
     session.commit()
     return {"msg": "team members removed successfully"}, status.HTTP_200_OK
+
+
+@teacher_router.post('/teacher/teams/{team_id}/owner')
+async def add_team_members(team_id: int, usernames: List[str], user:User = Depends(get_teacher)):
+    team = session.query(Team).get(team_id)
+    if team.creator_id!=user.id:
+        return {"msg": "user is not the creator of team"}, status.HTTP_401_UNAUTHORIZED
+    encrypted_usernames = [enc(username) for username in usernames]
+    for username in encrypted_usernames:
+        ret_user = session.query(User).filter(User.name==username).first()
+        if ret_user:
+            if ret_user.role == UserRole.TEACHER:
+                new_sub = TeamOwner(team_id=team_id, user_id=ret_user.id)
+                session.add(new_sub)
+    session.commit()
+    return {"msg": "team owners added successfully (ignored non-teacher users)"}, status.HTTP_200_OK
+
+
+@teacher_router.delete('/teacher/teams/{team_id}/owner')
+async def add_team_members(team_id: int, usernames: List[str], user:User = Depends(get_teacher)):
+    team = session.query(Team).get(team_id)
+    if team.creator_id!=user.id:
+        return {"msg": "user is not the creator of team"}, status.HTTP_401_UNAUTHORIZED
+    encrypted_usernames = [enc(username) for username in usernames]
+    for username in encrypted_usernames:
+        ret_user = session.query(User).filter(User.name==username).first()
+        if ret_user:
+            sub = session.query(TeamOwner).filter(TeamOwner.team_id==team_id, TeamOwner.user_id==ret_user.id).first()
+            if sub:
+                session.delete(sub)
+    session.commit()
+    return {"msg": "team owners removed successfully"}, status.HTTP_200_OK
+
+
+@teacher_router.post('/teacher/teams/{team_id}/channels')
+async def create_channel(team_id: int, name: str, user:User = Depends(get_teacher)):
+    team = session.query(Team).get(team_id)
+    if not team:
+        return {"msg": "team not found"}, status.HTTP_404_NOT_FOUND
+    new_channel = Channel()
+    new_channel.team_id = team_id
+    new_channel.set_name(name)
+    team.channels.append(new_channel)
+    session.commit()
+    return {"msg": "team created successfully"}, status.HTTP_201_CREATED
+
+
+@teacher_router.get('/teacher/teams/{team_id}/channels/')
+async def get_channels(team_id: int, user:User = Depends(get_teacher)):
+    channels = session.query(Team).get(team_id).channels
+    if channels:
+        all_channels = [channel.get() for channel in channels]
+        return {"msg": "channels retrieved successfully", 'channels':all_channels}, status.HTTP_200_OK
+    return {"msg": "could not find channel", 'channels':[]}, status.HTTP_404_NOT_FOUND
+
+
+@teacher_router.put('/teacher/channels/{channel_id}')
+async def update_channel_name(channel_id: int, name:str, user:User = Depends(get_teacher)):
+    channel = session.query(Channel).get(channel_id)
+    team = session.query(Team).get(channel.team.get().get('id'))
+    if team.creator_id == user.id or user in team.owners:
+        channel.set_name(name)
+        session.commit()
+    return {"msg": "channel name updated"}, status.HTTP_200_OK
