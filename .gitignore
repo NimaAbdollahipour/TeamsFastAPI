@@ -2,3 +2,4 @@ venv/
 **/*.db
 **/*.pyc
 .idea/
+**/.env

@@ -1,5 +1,6 @@
 from sqlalchemy.orm import relationship, declarative_base
 from enum import Enum as PyEnum
+from .des_enc import enc,dec
 from sqlalchemy import (
     Column,
     Integer,
@@ -28,6 +29,28 @@ class User(Base):
     password = Column(String(64), nullable=False)
     role = Column(Enum(UserRole), nullable=False)
 
+    def set_name(self,name):
+        self.name = enc(name)
+    def set_email(self,email):
+        self.email = enc(email)
+    def set_password(self,password):
+        self.password = enc(password)
+    def set_role(self,role):
+        if role == 'admin':
+            self.role = UserRole.ADMIN
+        elif role == 'teacher':
+            self.role = UserRole.TEACHER
+        else:
+            self.role = UserRole.STUDENT
+    def get(self):
+        return{
+            "id":self.id,
+            "name":dec(self.name),
+            "email":dec(self.email),
+            "password":dec(self.password),
+            "role":self.role.value
+        }
+
 
 class Message(Base):
     __tablename__ = "messages"
@@ -39,6 +62,19 @@ class Message(Base):
     receiver = relationship("User", backref="received_messages", foreign_keys=[receiver_id])
     date_created = Column(DateTime)
 
+    def set_content(self, content):
+        self.content = enc(content)
+
+    def get(self):
+        return {
+            "id":self.id,
+            "sender_id":self.sender_id,
+            "receiver_id":self.receiver_id,
+            "content":dec(self.content),
+            "date_created":self.date_created
+        }
+
+
 
 class Team(Base):
     __tablename__ = "teams"
@@ -46,6 +82,16 @@ class Team(Base):
     name = Column(String(64), nullable=False)
     creator_id = Column(Integer, ForeignKey('users.id'))
     creator = relationship("User", backref="teams")
+
+    def set_name(self, name):
+        self.content = enc(name)
+
+    def get(self):
+        return {
+            "id":self.id,
+            "creator_id":self.creator_id,
+            "name":dec(self.name),
+        }
 
 
 class TeamOwner(Base):
@@ -71,6 +117,16 @@ class Channel(Base):
     team_id = Column(Integer, ForeignKey('teams.id'))
     team = relationship("Team", backref="channels")
 
+    def set_name(self, name):
+        self.content = enc(name)
+
+    def get(self):
+        return {
+            "id":self.id,
+            "team_id":self.team_id,
+            "name":dec(self.name),
+        }
+
 
 class Announcement(Base):
     __tablename__ = "announcements"
@@ -82,6 +138,18 @@ class Announcement(Base):
     user = relationship("User", backref="announcements", foreign_keys=[user_id])
     date_created = Column(DateTime)
 
+    def set_content(self, content):
+        self.content = enc(content)
+
+    def get(self):
+        return {
+            "id":self.id,
+            "channel_id":self.channel_id,
+            "user_id":self.user_id,
+            "content":dec(self.content),
+            "date_created":self.date_created
+        }
+
 
 class Group(Base):
     __tablename__ = 'groups'
@@ -89,6 +157,16 @@ class Group(Base):
     name = Column(String(64), nullable=False)
     creator_id = Column(Integer, ForeignKey('users.id'))
     creator = relationship("User", backref="groups")
+
+    def set_name(self, name):
+        self.content = enc(name)
+
+    def get(self):
+        return {
+            "id":self.id,
+            "creator_id":self.creator_id,
+            "name":dec(self.name),
+        }
 
 
 class GroupMember(Base):
@@ -108,3 +186,15 @@ class GroupMessage(Base):
     user_id = Column(Integer, ForeignKey('users.id'))
     user = relationship("User", backref="group_messages", foreign_keys=[user_id])
     date_created = Column(DateTime)
+
+    def set_content(self, content):
+        self.content = enc(content)
+
+    def get(self):
+        return {
+            "id":self.id,
+            "group_id":self.group_id,
+            "user_id":self.user_id,
+            "content":dec(self.content),
+            "date_created":self.date_created
+        }

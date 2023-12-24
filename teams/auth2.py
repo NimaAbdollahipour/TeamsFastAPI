@@ -7,6 +7,7 @@ from fastapi import Depends, APIRouter, HTTPException, status
 from fastapi.security import OAuth2PasswordBearer, OAuth2PasswordRequestForm
 from jose import JWTError, jwt
 from passlib.context import CryptContext
+from .des_enc import enc,dec
 
 auth_router = APIRouter()
 SECRET_KEY = "wo8ZuP_RiY3Q6Wujn6dbhyxgq7r5TEONK7ekyaxVnUI"
@@ -21,19 +22,11 @@ credentials_exception = HTTPException(
 )
 
 
-def verify_password(plain_password, hashed_password):
-    return pwd_context.verify(plain_password, hashed_password)
-
-
-def get_password_hash(password):
-    return pwd_context.hash(password)
-
-
 def authenticate_user(username: str, password: str):
-    user = session.query(User).filter(User.name == username).first()
+    user = session.query(User).filter(User.name == enc(username)).first()
     if not user:
         return False
-    if not verify_password(password, user.password):
+    if not user.password==enc(password):
         return False
     return user
 
